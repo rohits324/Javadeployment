@@ -7,7 +7,7 @@ public class Employee {
     private String name;
     private String department;
     private String position;
-    //private String area;
-   // private String face;
+    private String area;
+    private String face;
     private String lastmodified;
 }
