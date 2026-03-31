@@ -4,12 +4,15 @@ import com.wdms.attndance.users.repositary.UserRepositary;
 import com.wdms.attndance.users.service.UserService;
 import com.wdms.attndance.users.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
@@ -32,10 +35,25 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/register")   // final path = /api/users/register
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
-    }
+//    @PostMapping("/register")   // final path = /api/users/register
+//    public User createUser(@RequestBody User user) {
+//        return userService.createUser(user);
+//    }
+        @PostMapping("/register")
+        public ResponseEntity<?> createUser(@RequestBody User user) {
+            //User existingUser = userRepositary.findByUsername(user.getUsername());
+            Optional<User> existingUserOpt = userRepositary.findByUsername(user.getUsername());
+            if (existingUserOpt.isPresent()) {
+                return ResponseEntity
+                        .status(HttpStatus.CONFLICT)
+                        .body("Username already exists");
+            }
+
+            User newUser = userService.createUser(user);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(newUser);
+        }
 
     @PostMapping("/login")
     public Map<String, String> login(@RequestBody User loginRequest) {
