@@ -53,7 +53,9 @@ jobs:
               
               # Try to kill it gracefully
               kill -15 $PID || true
-              sleep 2
+              echo "shutdown PID $PID"
+              sleep 8
+              echo "checking if exit"
               
               # Check if process is still alive
               if kill -0 $PID 2>/dev/null; then
