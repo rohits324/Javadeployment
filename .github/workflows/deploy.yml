@@ -41,52 +41,43 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
-          echo "🚀 Starting deployment..."
-      
-          # Do NOT exit on non-zero (important for kill command)
+         echo "🚀 Starting deployment..."
+
           set +e
-      
-          cd /home/ubuntu/app || { echo "❌ Directory not found"; exit 1; }
-      
+          
+          cd /home/***/app || { echo "❌ Directory not found"; exit 1; }
+          
           echo "📂 Current directory: $(pwd)"
-      
-          # Find existing process
-          PID=$(pgrep -f 'app.jar')
-      
-          if [ -n "$PID" ]; then
-              echo "⚠️ Old application running with PID $PID"
-      
-              # Try graceful shutdown
-              ( kill -15 $PID 2>/dev/null ) &
-              sleep 3
-      
-              # Check if still running
-              if kill -0 $PID 2>/dev/null; then
-                  echo "❌ Failed to stop old application. Still running with PID $PID"
-              else
-                  echo "✅ Old application successfully stopped"
-              fi
-          else
-              echo "ℹ️ No old application running"
-          fi
-      
-          echo "🆕 Starting new application..."
-      
-          # Start new app
-          nohup java -jar app.jar > app.log 2>&1 &
-      
+          
+          # Kill old app WITHOUT triggering SSH termination
+          echo "🛑 Stopping old application if running..."
+          pkill -f app.jar || true
+          
           sleep 3
-      
-          # Verify new process started
-          NEW_PID=$(pgrep -f 'app.jar')
-      
-          if [ -n "$NEW_PID" ]; then
-              echo "✅ New application started successfully with PID $NEW_PID"
+          
+          # Verify stop
+          PID=$(pgrep -f 'app.jar')
+          if [ -n "$PID" ]; then
+          echo "❌ Failed to stop old application. Still running with PID $PID"
           else
-              echo "❌ Failed to start new application. Check logs:"
-              tail -n 50 app.log
-              exit 1
+          echo "✅ Old application successfully stopped"
           fi
-      
+          
+          echo "🆕 Starting new application..."
+          
+          nohup java -jar app.jar > app.log 2>&1 &
+          
+          sleep 3
+          
+          NEW_PID=$(pgrep -f 'app.jar')
+          
+          if [ -n "$NEW_PID" ]; then
+          echo "✅ New application started successfully with PID $NEW_PID"
+          else
+          echo "❌ Failed to start new application. Check logs:"
+          tail -n 50 app.log
+          exit 1
+          fi
+          
           echo "🎉 Deployment completed successfully"
           exit 0
