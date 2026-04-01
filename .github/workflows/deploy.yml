@@ -41,34 +41,24 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
-          cd /home/ubuntu/app
-
-          set -e
-
-          # Find old app process
-          PID=$(pgrep -f 'app.jar') || true
-          
-          if [ ! -z "$PID" ]; then
-              echo "Old application running with PID $PID"
+          cd /home/***/app
+            set -e       
+            PID=$(pgrep -f 'app.jar' || true) 
+            if [ ! -z "$PID" ]; then
+                echo "Old application running with PID $PID"
               
-              # Try to kill it gracefully
-              kill -15 $PID || true
-              echo "shutdown PID $PID"
-              sleep 8
-              echo "checking if exit"
+                kill -15 $PID 2>/dev/null || true
+                sleep 2
               
-              # Check if process is still alive
-              if kill -0 $PID 2>/dev/null; then
-                  echo "Failed to stop old application. Process $PID still running."
-              else
-                  echo "Old application successfully stopped."
-              fi
-          else
-              echo "No old application running. Proceeding..."
-          fi
-          
-          # Start new app detached
-          nohup java -jar app.jar > app.log 2>&1 & disown
-          
-          echo "Deployment completed"
-          exit 0
+                if kill -0 $PID 2>/dev/null; then
+                    echo "Failed to stop old application. Process $PID still running."
+                else
+                    echo "Old application successfully stopped."
+                fi
+            else
+                echo "No old application running. Proceeding..."
+            fi
+            
+            nohup java -jar app.jar > app.log 2>&1 &
+            echo "Deployment completed"
+            exit 0
