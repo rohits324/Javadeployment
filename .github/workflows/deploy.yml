@@ -42,19 +42,23 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         script: |
           cd /home/ubuntu/app
+
             echo "Stopping existing app (if running)..."
             
             PID=$(pgrep -f 'app.jar')
             
             if [ -z "$PID" ]; then
-            echo "No existing app running"
+              echo "No existing app running"
             else
-            echo "Killing process $PID"
-            kill -15 $PID
-            sleep 2
+              echo "Killing process $PID"
+              kill -15 $PID || true
+              sleep 2
             fi
             
             echo "Starting new app..."
-            nohup java -jar app.jar > app.log 2>&1 &
+            
+            nohup java -jar app.jar > app.log 2>&1 & disown
             
             echo "Deployment completed"
+            
+            exit 0
