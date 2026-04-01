@@ -41,8 +41,8 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
-          cd /home/***/app
-            set -e       
+          set +e
+          cd /home/***/app       
             PID=$(pgrep -f 'app.jar' || true) 
             if [ ! -z "$PID" ]; then
                 echo "Old application running with PID $PID"
