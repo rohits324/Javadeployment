@@ -57,7 +57,7 @@ jobs:
               echo "⚠️ Old application running with PID $PID"
       
               # Try graceful shutdown
-              kill -15 $PID 2>/dev/null
+              ( kill -15 $PID 2>/dev/null ) &
               sleep 3
       
               # Check if still running
