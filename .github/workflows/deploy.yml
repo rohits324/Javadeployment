@@ -49,19 +49,12 @@ jobs:
           
           echo "📂 Current directory: $(pwd)"
           
-          # Kill old app WITHOUT triggering SSH termination
-          echo "🛑 Stopping old application if running..."
-          pkill -f app.jar || true
+          echo "🛑 Stopping old application (detached)..."
           
-          sleep 3
+          # 🔥 FULLY DETACHED STOP PROCESS
+          nohup bash -c "pkill -f app.jar" >/dev/null 2>&1 &
           
-          # Verify stop
-          PID=$(pgrep -f 'app.jar')
-          if [ -n "$PID" ]; then
-          echo "❌ Failed to stop old application. Still running with PID $PID"
-          else
-          echo "✅ Old application successfully stopped"
-          fi
+          sleep 5
           
           echo "🆕 Starting new application..."
           
@@ -72,11 +65,11 @@ jobs:
           NEW_PID=$(pgrep -f 'app.jar')
           
           if [ -n "$NEW_PID" ]; then
-          echo "✅ New application started successfully with PID $NEW_PID"
+            echo "✅ New application started successfully with PID $NEW_PID"
           else
-          echo "❌ Failed to start new application. Check logs:"
-          tail -n 50 app.log
-          exit 1
+            echo "❌ Failed to start new application. Check logs:"
+            tail -n 50 app.log
+            exit 1
           fi
           
           echo "🎉 Deployment completed successfully"
