@@ -41,24 +41,52 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
+          echo "🚀 Starting deployment..."
+      
+          # Do NOT exit on non-zero (important for kill command)
           set +e
-          cd /home/***/app       
-            PID=$(pgrep -f 'app.jar' || true) 
-            if [ ! -z "$PID" ]; then
-                echo "Old application running with PID $PID"
-              
-                kill -15 $PID 2>/dev/null || true
-                sleep 2
-              
-                if kill -0 $PID 2>/dev/null; then
-                    echo "Failed to stop old application. Process $PID still running."
-                else
-                    echo "Old application successfully stopped."
-                fi
-            else
-                echo "No old application running. Proceeding..."
-            fi
-            
-            nohup java -jar app.jar > app.log 2>&1 &
-            echo "Deployment completed"
-            exit 0
+      
+          cd /home/ubuntu/app || { echo "❌ Directory not found"; exit 1; }
+      
+          echo "📂 Current directory: $(pwd)"
+      
+          # Find existing process
+          PID=$(pgrep -f 'app.jar')
+      
+          if [ -n "$PID" ]; then
+              echo "⚠️ Old application running with PID $PID"
+      
+              # Try graceful shutdown
+              kill -15 $PID 2>/dev/null
+              sleep 3
+      
+              # Check if still running
+              if kill -0 $PID 2>/dev/null; then
+                  echo "❌ Failed to stop old application. Still running with PID $PID"
+              else
+                  echo "✅ Old application successfully stopped"
+              fi
+          else
+              echo "ℹ️ No old application running"
+          fi
+      
+          echo "🆕 Starting new application..."
+      
+          # Start new app
+          nohup java -jar app.jar > app.log 2>&1 &
+      
+          sleep 3
+      
+          # Verify new process started
+          NEW_PID=$(pgrep -f 'app.jar')
+      
+          if [ -n "$NEW_PID" ]; then
+              echo "✅ New application started successfully with PID $NEW_PID"
+          else
+              echo "❌ Failed to start new application. Check logs:"
+              tail -n 50 app.log
+              exit 1
+          fi
+      
+          echo "🎉 Deployment completed successfully"
+          exit 0
