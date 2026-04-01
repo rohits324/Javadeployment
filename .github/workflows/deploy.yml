@@ -22,8 +22,8 @@ jobs:
     - name: Build JAR
       run: mvn clean package -DskipTests
 
-    - name: Rename JAR
-      run: mv target/*.jar app.jar
+    - name: Rename JAR (versioned)
+      run: mv target/*.jar app_$(date +%s).jar
 
     - name: Copy JAR to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -31,7 +31,7 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
-        source: "app.jar"
+        source: "app_*.jar"
         target: "/home/ubuntu/app"
 
     - name: Deploy on EC2
@@ -41,36 +41,18 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
-         echo "🚀 Starting deployment..."
+          echo "🚀 Starting deployment..."
 
-          set +e
-          
-          cd /home/***/app || { echo "❌ Directory not found"; exit 1; }
-          
-          echo "📂 Current directory: $(pwd)"
-          
-          echo "🛑 Stopping old application (detached)..."
-          
-          # 🔥 FULLY DETACHED STOP PROCESS
-          nohup bash -c "pkill -f app.jar" >/dev/null 2>&1 &
-          
-          sleep 5
-          
-          echo "🆕 Starting new application..."
-          
-          nohup java -jar app.jar > app.log 2>&1 &
-          
-          sleep 3
-          
-          NEW_PID=$(pgrep -f 'app.jar')
-          
-          if [ -n "$NEW_PID" ]; then
-            echo "✅ New application started successfully with PID $NEW_PID"
-          else
-            echo "❌ Failed to start new application. Check logs:"
-            tail -n 50 app.log
-            exit 1
-          fi
-          
+          cd /home/ubuntu/app
+
+          # Get latest uploaded jar
+          JAR=$(ls -t app_*.jar | head -n 1)
+
+          echo "📦 Latest JAR: $JAR"
+
+          echo "🆕 Starting new application on new port..."
+
+          nohup java -jar $JAR --server.port=8081 > app.log 2>&1 &
+
           echo "🎉 Deployment completed successfully"
           exit 0
