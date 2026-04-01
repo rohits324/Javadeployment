@@ -43,22 +43,16 @@ jobs:
         script: |
           cd /home/ubuntu/app
 
-            echo "Stopping existing app (if running)..."
-            
-            PID=$(pgrep -f 'app.jar')
-            
-            if [ -z "$PID" ]; then
-              echo "No existing app running"
-            else
-              echo "Killing process $PID"
+          # Stop old app if exists
+          PID=$(pgrep -f 'app.jar')
+          if [ ! -z "$PID" ]; then
+              echo "Killing existing app $PID"
               kill -15 $PID || true
               sleep 2
-            fi
-            
-            echo "Starting new app..."
-            
-            nohup java -jar app.jar > app.log 2>&1 & disown
-            
-            echo "Deployment completed"
-            
-            exit 0
+          fi
+          
+          # Start new app detached
+          nohup java -jar app.jar > app.log 2>&1 & disown
+          
+          echo "Deployment completed"
+          exit 0
