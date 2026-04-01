@@ -43,12 +43,26 @@ jobs:
         script: |
           cd /home/ubuntu/app
 
-          # Stop old app if exists
-          PID=$(pgrep -f 'app.jar')
+          set -e
+
+          # Find old app process
+          PID=$(pgrep -f 'app.jar') || true
+          
           if [ ! -z "$PID" ]; then
-              echo "Killing existing app $PID"
+              echo "Old application running with PID $PID"
+              
+              # Try to kill it gracefully
               kill -15 $PID || true
               sleep 2
+              
+              # Check if process is still alive
+              if kill -0 $PID 2>/dev/null; then
+                  echo "Failed to stop old application. Process $PID still running."
+              else
+                  echo "Old application successfully stopped."
+              fi
+          else
+              echo "No old application running. Proceeding..."
           fi
           
           # Start new app detached
